@@ -54,14 +54,14 @@ def handle_paragraph(selector, el):
     return s('\n\n')
 
 
-# Available options: None, hyperref, footnotes
+# Available options: hyperref, footnotes or None
 hyperlinks = None
 
 selectors = {
     # defaults
-    'html': s('\n\n', '\n\n'),
+    'html': s('\\thispagestyle{empty}\n{\n', '\n}\n'),
     'head': s(ignoreContent=True, ignoreStyle=True),
-    'body': s('\n\n', '\n\n'),
+    'body': s('\n\n', '\n\n\\clearpage\n\n'),
     'blockquote': s('\n\\begin{quotation}', '\n\\end{quotation}'),
     'ol': s('\n\\begin{enumerate}', '\n\\end{enumerate}'),
     'ul': s('\n\\begin{itemize}', '\n\\end{itemize}'),
@@ -78,9 +78,9 @@ selectors = {
 
     # customized
     'p': handle_paragraph,
-    '.chapter-name': s( '\n\\noindent\\hfil\\charscale[1.7]{\n', '\n}\\hfil\\newline\n\\vspace*{1\\nbs}\n\n'),
-    '.chapter-number': {'start': '\n\\noindent\\hfil\\charscale[1.0]{\\textsc{\\addfontfeature{Ligatures=NoCommon}{', 'end': '}}}\\hfil\\newline\n\\vspace*{0.0\\nbs}\n'},
-    'p.break': {'start': '\n\n\scenepause', 'ignoreStyle': True, 'ignoreContent': True}
+    '.chapter-name': s( '\n\\noindent\\hfil\\charscale[2,0,-0.1\\nbs]{\centering ', '}\\hfil\\newline\n\\vspace*{1\\nbs}\n\n', ignoreStyle=True),
+    '.chapter-number': s('\\vspace*{1\\nbs}\n\\noindent\\hfil\\charscale[1.0,0,-0.1\\nbs]{\\textsc{\\addfontfeature{Ligatures=NoCommon}{\centering ', '}}}\\hfil\\newline\n\\vspace*{0.0\\nbs}\n', ignoreStyle=True),
+    'p.break': s('\n\n\scenepause', ignoreStyle=True, ignoreContent=True)
 }
 
 html_entities = {
@@ -102,10 +102,15 @@ styles = {
         'small-caps': ('\\textsc{', '}')
     },
     'text-indent': {
-        '0': ('\\noindent ', '')
+        '0': ('\\noindent ', ''),
+        '-1em': ('\\noindent\hspace*{-1em}', '')
     },
     'text-align': {
-        'center': ('\n{\centering\n', '\n}\n')
+        'left': ('{\\raggedright ', '}'),
+        'center': ('{\centering ', '\\par}')
+    },
+    'text-wrap': {
+        'balanced': ('{\\csname @flushglue\\endcsname=0pt plus .25\\textwidth\n', '\n}')
     },
     'page-break-inside': {
         'avoid': ('\n\n\\begin{samepage}\n\n', '\n\n\\end{samepage}\n\n')
@@ -113,7 +118,9 @@ styles = {
 
     # customized
     'margin': {
-        '0 2em': ('\n\n\\begin{adjustwidth}{2em}{2em}\n', '\n\\end{adjustwidth}\n\n')
+        '0 2em': ('\n\n\\begin{adjustwidth}{2em}{2em}\n', '\n\\end{adjustwidth}\n\n'),
+        '0 1em 0 2em': ('\n\n\\begin{adjustwidth}{2em}{1em}\n', '\n\\end{adjustwidth}\n\n'),
+        '0 1em': ('\n\n\\begin{adjustwidth}{2em}{2em}\n', '\n\end{adjustwidth}\n\n')
     },
     'margin-top': {
         '1em': ('\n\n\\vspace{\\baselineskip}\n\\noindent\n', '')

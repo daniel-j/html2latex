@@ -254,20 +254,3 @@ if __name__ == '__main__':
         out = html2latex(root)
         with open(outputFile, 'w') as f:
             f.write(out)
-
-    """
-    root = lxml.html.parse(
-        'test.html',
-        parser=lxml.html.HTMLParser(encoding='utf-8', remove_comments=True)
-    ).getroot()
-
-    stylesheet = cssutils.parseFile('test.css')
-
-    cascadingStyle = getView(root, stylesheet, styleCallback=styleattribute)
-    selectors = getSelectors(root, config.selectors)
-    out = html2latex(root)
-    with open('test.tex', 'w') as f:
-        f.write(out)
-    # print(out)
-
-    """

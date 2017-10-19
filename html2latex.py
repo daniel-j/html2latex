@@ -5,17 +5,8 @@ import lxml.html
 from lxml.cssselect import CSSSelector
 import cssutils
 import re
-from importlib import import_module
-
-sys.path.insert(0, './')
-config = import_module('config')
-
-root = lxml.html.parse(
-    'test.html',
-    parser=lxml.html.HTMLParser(encoding='utf-8', remove_comments=True)
-).getroot()
-
-stylesheet = cssutils.parseFile('test.css')
+from importlib.machinery import SourceFileLoader
+import argparse
 
 
 def styleattribute(element):
@@ -231,9 +222,52 @@ def html2latex(el):
     return '\n'.join(map(str.strip, result.split('\n')))
 
 
-cascadingStyle = getView(root, stylesheet, styleCallback=styleattribute)
-selectors = getSelectors(root, config.selectors)
-out = html2latex(root)
-with open('test.tex', 'w') as f:
-    f.write(out)
-# print(out)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input', action='append', default=[])
+    parser.add_argument('--output', action='append', default=[])
+    parser.add_argument('--style', action='append', default=[])
+    parser.add_argument('--config', default='config.py')
+    args = parser.parse_args()
+
+    assert len(args.input) == len(args.output)
+
+    print('Loading configuration...')
+    config = SourceFileLoader('config', args.config).load_module()
+
+    print('Parsing stylesheets...')
+    stylefiles = []
+    for f in args.style:
+        with open(f, 'r') as stylefile:
+            stylefiles.append(stylefile.read())
+    styleparser = cssutils.CSSParser(validate=False, parseComments=False)
+    stylesheet = styleparser.parseString('\n'.join(stylefiles))
+
+    htmlParser = lxml.html.HTMLParser(encoding='utf-8', remove_comments=True)
+    for i in range(0, len(args.input)):
+        inputFile = args.input[i]
+        outputFile = args.output[i]
+        print('Converting ' + inputFile + ' to ' + outputFile)
+        root = lxml.html.parse(inputFile, parser=htmlParser).getroot()
+        cascadingStyle = getView(root, stylesheet, styleCallback=styleattribute)
+        selectors = getSelectors(root, config.selectors)
+        out = html2latex(root)
+        with open(outputFile, 'w') as f:
+            f.write(out)
+
+    """
+    root = lxml.html.parse(
+        'test.html',
+        parser=lxml.html.HTMLParser(encoding='utf-8', remove_comments=True)
+    ).getroot()
+
+    stylesheet = cssutils.parseFile('test.css')
+
+    cascadingStyle = getView(root, stylesheet, styleCallback=styleattribute)
+    selectors = getSelectors(root, config.selectors)
+    out = html2latex(root)
+    with open('test.tex', 'w') as f:
+        f.write(out)
+    # print(out)
+
+    """

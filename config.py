@@ -17,7 +17,7 @@ def s(start='', end='', ignoreStyle=False, ignoreContent=False):
     }
 
 
-def handle_hyperlink(selector, el):
+def handle_anchor(selector, el):
     href = el.get('href')
     name = el.get('name')
 
@@ -76,7 +76,7 @@ selectors = {
     'sup': s('\\textsuperscript{', '}'),
     'br': s('\\\\\n'),
     'hr': s('\n\n\\line(1,0){300}\n', ignoreStyle=True),
-    'a': handle_hyperlink,
+    'a': handle_anchor,
 
     # customized
     'p': handle_paragraph,

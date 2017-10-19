@@ -85,10 +85,9 @@ selectors = {
     'p.break': s('\n\n\scenepause', ignoreStyle=True, ignoreContent=True)
 }
 
-html_entities = {
+characters = {
     u'\u00A0': '\\,',
-    u'\u2009': '\\,',
-    '&': '\\&'
+    u'\u2009': '\\,'
 }
 
 styles = {

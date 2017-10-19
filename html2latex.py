@@ -112,7 +112,7 @@ def getSelectors(document, selectors):
 
 
 def getChar(ent):
-    for e in config.html_entities:
+    for e in config.characters:
         if e.get('num') == ent or e.get('name') == ent:
             return e.get('convertTo')
     return ''
@@ -126,7 +126,7 @@ def convertLaTeXSpecialChars(string):
         .replace("$", "\\$").replace("#", "\\#") \
         .replace("%", "\\%").replace("~", "\\textasciitilde{}") \
         .replace("_", "\\_").replace("^", "\\textasciicircum{}") \
-        .replace("@-HASH-", "#")
+        .replace("@-HASH-", "#").replace("&", "\\&")
     return string
 
 
@@ -146,8 +146,8 @@ def characters(string, leaveText=False):
     # string = convertCharEntitites(string)
     s = list(string)
     for i, char in enumerate(s):
-        if char in config.html_entities:
-            s[i] = config.html_entities.get(char)
+        if char in config.characters:
+            s[i] = config.characters.get(char)
     return ''.join(s)
 
 
@@ -238,11 +238,12 @@ if __name__ == '__main__':
     print('Loading configuration...')
     config = SourceFileLoader('config', args.config).load_module()
 
-    print('Parsing stylesheets...')
     stylefiles = []
-    for f in args.style:
-        with open(f, 'r') as stylefile:
-            stylefiles.append(stylefile.read())
+    if args.style:
+        print('Parsing stylesheets...')
+        for f in args.style:
+            with open(f, 'r') as stylefile:
+                stylefiles.append(stylefile.read())
     styleparser = cssutils.CSSParser(validate=False, parseComments=False)
     stylesheet = styleparser.parseString('\n'.join(stylefiles))
 

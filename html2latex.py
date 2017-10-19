@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# created by djazz
+# https://github.com/daniel-j/html2latex
+
 import sys
 import lxml.html
 from lxml.cssselect import CSSSelector

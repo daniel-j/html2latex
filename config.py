@@ -1,4 +1,6 @@
 
+# Configure html2latex
+
 import re
 
 replacements_head = {}

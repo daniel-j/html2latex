@@ -19,7 +19,7 @@ stylesheet = cssutils.parseFile('test.css')
 
 
 def styleattribute(element):
-    "returns css.CSSStyleDeclaration of inline styles, for html: @style"
+    # returns css.CSSStyleDeclaration of inline styles, for html: @style
     cssText = element.get('style')
     if cssText:
         return cssutils.css.CSSStyleDeclaration(cssText=cssText)
@@ -27,15 +27,13 @@ def styleattribute(element):
         return None
 
 
-def getView(document, sheet, media='all', name=None,
+def getView(document, sheet, name=None,
             styleCallback=lambda element: None):
     """
     document
         a DOM document, currently an lxml HTML document
     sheet
         a CSS StyleSheet
-    media: optional
-        TODO: view for which media it should be
     name: optional
         TODO: names of sheets only
     styleCallback: optional
@@ -109,13 +107,13 @@ def getSelectors(document, selectors):
                 info = val(selector, element)
             if element not in view:
                 view[element] = {}
-                view[element].update(info)
+                if info:
+                    view[element].update(info)
             else:
-                head = view[element].get('start', '')
-                tail = view[element].get('end', '')
-                view[element].update(info)
-                #view[element]['head'] = head
-                #view[element]['tail'] = tail
+                # head = view[element].get('start', '')
+                # tail = view[element].get('end', '')
+                if info:
+                    view[element].update(info)
     return view
 
 
@@ -126,70 +124,31 @@ def getChar(ent):
     return ''
 
 
-# def convertCharEntitites(string):
-#     entity = ""
-
-#     i = 0
-#     addToBuffer = False
-#     while i < len(string):
-#         # new entity started
-#         if string[i] == '&':
-#             addToBuffer = True
-#             entity = ''
-#             i += 1
-#             continue
-
-#         if addToBuffer and string[i] == ';':
-#             # find symbol
-#             repl = ''
-
-#             if entity[0] == '#':
-#                 entityNum = 0
-#                 if entity[1].lower() == 'x':
-#                     entityNum = int(entity[2:], 16)
-#                 else:
-#                     entityNum = int(entity[1:], 10)
-#                 repl = getChar(entityNum)
-#             else:
-#                 repl = getChar(entity)
-#             if repl:
-#                 string = string.replace("&" + entity + ";", repl)
-#                 i += len(repl) - (len(entity) + 2)
-
-#             addToBuffer = False
-#             entity = ''
-#             i += 1
-#             continue
-
-#         if addToBuffer:
-#             entity += string[i]
-#         i += 1
-
-#     return string
-
-
 def convertLaTeXSpecialChars(string):
     string = string \
-        .replace("\\", "@-DOLLAR-\\backslash@-DOLLAR-") \
+        .replace("{", "\\{").replace("}", "\\}") \
+        .replace("\\", "\\textbackslash{}") \
         .replace("&#", "&@-HASH-") \
         .replace("$", "\\$").replace("#", "\\#") \
-        .replace("%", "\\%").replace("~", "\\textasciitilde") \
-        .replace("_", "\\_").replace("^", "\\textasciicircum") \
-        .replace("{", "\\{").replace("}", "\\}") \
-        .replace("@-DOLLAR-", "$") \
+        .replace("%", "\\%").replace("~", "\\textasciitilde{}") \
+        .replace("_", "\\_").replace("^", "\\textasciicircum{}") \
         .replace("@-HASH-", "#")
     return string
 
 
-def characters(string, leaveText, ignoreContent):
-    if not leaveText:
-        string = string.replace('\n', ' ').replace('\t', ' ')
-
+def inside_characters(string, leaveText=False, ignoreContent=False):
+    string = characters(string, leaveText)
     if string.strip() == '' or ignoreContent:
         return ''
+    return string
 
-    if leaveText:
-        string = convertLaTeXSpecialChars(string)
+
+def characters(string, leaveText=False):
+    if not leaveText:
+        string = string.replace('\n', ' ').replace('\t', ' ')
+        string = re.sub('[ ]+', ' ', string)
+
+    string = convertLaTeXSpecialChars(string)
     # string = convertCharEntitites(string)
     s = list(string)
     for i, char in enumerate(s):
@@ -252,7 +211,7 @@ def html2latex(el):
 
     if not ignoreContent:
         if el.text:
-            text = characters(el.text, leaveText, ignoreContent)
+            text = inside_characters(el.text, leaveText, ignoreContent)
             r = config.replacements_head.get(el, None)
             if r:
                 text = re.sub(r[0], r[1], text)
@@ -260,14 +219,16 @@ def html2latex(el):
         for child in el:
             result.append(html2latex(child))
             if child.tail:
-                text = characters(child.tail, leaveText, ignoreContent)
+                text = characters(child.tail)
                 r = config.replacements_tail.get(el, None)
                 if r:
                     text = re.sub(r[0], r[1], text)
                 result.append(text)
 
     result.append(''.join(tails))
-    return ''.join(result)
+    result = ''.join(result)
+    # strip whitespace at the start and end of lines
+    return '\n'.join(map(str.strip, result.split('\n')))
 
 
 cascadingStyle = getView(root, stylesheet, styleCallback=styleattribute)

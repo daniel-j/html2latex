@@ -49,6 +49,7 @@ def getView(document, sheet, name=None,
             # TODO: make this a callback to be able to use other stuff than lxml
             cssselector = CSSSelector(selector.selectorText)
             matching = cssselector.evaluate(document)
+
             for element in matching:
                 # if element.tag in ('div',):
                     # add styles for all matching DOM elements
@@ -57,14 +58,6 @@ def getView(document, sheet, name=None,
                         # add initial empty style declatation
                         view[element] = cssutils.css.CSSStyleDeclaration()
                         specificities[element] = {}
-
-                        # and add inline @style if present
-                        inlinestyle = styleCallback(element)
-                        if inlinestyle:
-                            for p in inlinestyle:
-                                # set inline style specificity
-                                view[element].setProperty(p)
-                                specificities[element][p.name] = (1,0,0,0)
 
                     for p in rule.style:
                         # update style declaration
@@ -84,7 +77,6 @@ def getView(document, sheet, name=None,
                                     specificities[element][p.name]):
                                 # later, more specific or higher prio
                                 view[element].setProperty(p.name, p.value, p.priority)
-
     return view
 
 
@@ -164,6 +156,17 @@ def html2latex(el):
     heads = []
     tails = []
 
+    # and add inline @style if present
+    inlinestyle = styleattribute(el)
+    if inlinestyle:
+        for p in inlinestyle:
+            if el not in cascadingStyle:
+                # add initial empty style declatation
+                cascadingStyle[el] = cssutils.css.CSSStyleDeclaration()
+            # set inline style specificity
+            cascadingStyle[el].setProperty(p)
+            # specificities[el][p.name] = (1,0,0,0)
+
     declarations = cascadingStyle.get(el, [])
     # htmlfunc = getattr(config, 'element_'+el.tag.lower(), None)
     ignoreContent = False
@@ -231,6 +234,7 @@ if __name__ == '__main__':
     parser.add_argument('--output', action='append', default=[])
     parser.add_argument('--style', action='append', default=[])
     parser.add_argument('--config', default='config.py')
+    parser.add_argument('--disable-style-tags', action='store_true')
     args = parser.parse_args()
 
     assert len(args.input) == len(args.output)
@@ -244,8 +248,8 @@ if __name__ == '__main__':
         for f in args.style:
             with open(f, 'r') as stylefile:
                 stylefiles.append(stylefile.read())
+    externalStyle = '\n'.join(stylefiles)
     styleparser = cssutils.CSSParser(validate=False, parseComments=False)
-    stylesheet = styleparser.parseString('\n'.join(stylefiles))
 
     htmlParser = lxml.html.HTMLParser(encoding='utf-8', remove_comments=True)
     for i in range(0, len(args.input)):
@@ -253,6 +257,10 @@ if __name__ == '__main__':
         outputFile = args.output[i]
         print('Converting ' + inputFile + ' to ' + outputFile)
         root = lxml.html.parse(inputFile, parser=htmlParser).getroot()
+        documentStyle = ''
+        if not args.disable_style_tags:
+            documentStyle = '\n'.join([style.text for style in root.getchildren()[0].findall('style')])
+        stylesheet = styleparser.parseString(externalStyle + documentStyle)
         cascadingStyle = getView(root, stylesheet, styleCallback=styleattribute)
         selectors = getSelectors(root, config.selectors)
         out = html2latex(root)

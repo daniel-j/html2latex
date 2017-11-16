@@ -46,7 +46,7 @@ def handle_paragraph(selector, el):
     node = el
     while True:
         if node.text and re.match(match, node.text):
-            replacements_head[node] = (match, '\\indent\\llap{“}')
+            replacements_head[node] = (match, '\\\\leavevmode\\\\llap{“}')
             break
         elif not node.text and node.__len__() > 0:
             node = node[0]
@@ -80,14 +80,18 @@ selectors = {
 
     # customized
     'p': handle_paragraph,
-    '.chapter-name': s( '\n\\noindent\\hfil\\charscale[2,0,-0.1\\nbs]{\centering ', '}\\hfil\\newline\n\\vspace*{1\\nbs}\n\n', ignoreStyle=True),
-    '.chapter-number': s('\\vspace*{1\\nbs}\n\\noindent\\hfil\\charscale[1.0,0,-0.1\\nbs]{\\textsc{\\addfontfeature{Ligatures=NoCommon}{\centering ', '}}}\\hfil\\newline\n\\vspace*{0.0\\nbs}\n', ignoreStyle=True),
-    'p.break': s('\n\n\scenepause', ignoreStyle=True, ignoreContent=True)
+    '.chapter-name': s('\n\\noindent\\hfil\\charscale[2,0,-0.1\\nbs]{', '}\\hfil\\newline\n\\vspace*{2\\nbs}\n\n', ignoreStyle=True),
+    '.chapter-number': s('\\vspace*{3\\nbs}\n\\noindent\\hfil\\charscale[1.0,0,-0.1\\nbs]{\\textsc{\\addfontfeature{Ligatures=NoCommon,LetterSpace=15}{\\strreplace{', '}{ }{}}}}\\hfil\\newline\n\\vspace*{0.0\\nbs}\n', ignoreStyle=True),
+    'p.break': s('\n\n\scenepause', ignoreStyle=True, ignoreContent=True),
+    '.center': s('\n\n{\\csname @flushglue\\endcsname=0pt plus .25\\textwidth\n\\noindent\\centering{}', '\\par\n}', ignoreStyle=True)
 }
 
 characters = {
-    u'\u00A0': '\\,',
-    u'\u2009': '\\,'
+    u'\u00A0': '~',  # &nbsp;
+    u'\u2009': '\\,',  # &thinsp;
+    u'\u2003': '\hspace*{1em}', # &emsp;
+    '[': '{[}',
+    ']': '{]}'
 }
 
 styles = {
@@ -103,18 +107,23 @@ styles = {
         'small-caps': ('\\textsc{', '}')
     },
     'text-indent': {
-        '0': ('\\noindent ', ''),
-        '-1em': ('\\noindent\hspace*{-1em}', '')
+        '0': ('\\noindent{}', ''),
+        '-1em': ('\\noindent\\hspace*{-1em}', '')
     },
     'text-align': {
-        'left': ('{\\raggedright ', '}'),
-        'center': ('{\centering ', '\\par}')
+        'left': ('\n{\\raggedright{}', '}'),
+        'center': ('\n{\\centering{}', '\\par}'),
+        'right': ('\n{\\raggedleft{}', '}')
     },
     'text-wrap': {
         'balanced': ('{\\csname @flushglue\\endcsname=0pt plus .25\\textwidth\n', '\n}')
     },
-    'page-break-inside': {
-        'avoid': ('\n\n\\begin{samepage}\n\n', '\n\n\\end{samepage}\n\n')
+    '-latex-needspace': {
+        '2': ('\n\n\\needspace{2\\baselineskip}\n', '')
+    },
+
+    'display': {
+        'none': s(ignoreContent=True, ignoreStyle=True)
     },
 
     # customized
@@ -125,5 +134,11 @@ styles = {
     },
     'margin-top': {
         '1em': ('\n\n\\vspace{\\baselineskip}\n\\noindent\n', '')
+    },
+    'margin-bottom': {
+        '1em': ('', '\n\n\\vspace{\\baselineskip}\n\\noindent\n')
+    },
+    '-latex-display': {
+        'none': s(ignoreContent=True, ignoreStyle=True)
     }
 }

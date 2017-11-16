@@ -5,7 +5,7 @@
 
 import sys
 import lxml.html
-from lxml.cssselect import CSSSelector
+from lxml.cssselect import CSSSelector, ExpressionError
 import cssutils
 import re
 from importlib.machinery import SourceFileLoader
@@ -47,7 +47,10 @@ def getView(document, sheet, name=None,
     for rule in rules:
         for selector in rule.selectorList:
             # TODO: make this a callback to be able to use other stuff than lxml
-            cssselector = CSSSelector(selector.selectorText)
+            try:
+                cssselector = CSSSelector(selector.selectorText)
+            except ExpressionError:
+                continue
             matching = cssselector.evaluate(document)
 
             for element in matching:
@@ -122,14 +125,14 @@ def convertLaTeXSpecialChars(string):
     return string
 
 
-def inside_characters(string, leaveText=False, ignoreContent=False):
-    string = characters(string, leaveText)
+def inside_characters(el, string, leaveText=False, ignoreContent=False):
+    string = characters(el, string, leaveText)
     if string.strip() == '' or ignoreContent:
         return ''
     return string
 
 
-def characters(string, leaveText=False):
+def characters(el, string, leaveText=False):
     if not leaveText:
         string = string.replace('\n', ' ').replace('\t', ' ')
         string = re.sub('[ ]+', ' ', string)
@@ -140,6 +143,8 @@ def characters(string, leaveText=False):
     for i, char in enumerate(s):
         if char in config.characters:
             s[i] = config.characters.get(char)
+            if callable(s[i]):
+                s[i] = s[i](el, i, char)
     return ''.join(s)
 
 
@@ -173,18 +178,8 @@ def html2latex(el):
     ignoreStyle = False
     leaveText = False
 
-    # if htmlfunc:
-    #     o = htmlfunc(el, declarations) if callable(htmlfunc) else htmlfunc
-    #     heads.insert(0, o.get('head', ''))
-    #     tails.append(o.get('tail', ''))
-    #     ignoreContent = o.get('ignoreContent', ignoreContent)
-    #     ignoreStyle = o.get('ignoreStyle', ignoreStyle)
-    #     leaveText = o.get('leaveText', leaveText)
-
     sel = selectors.get(el, None)
     if sel:
-        heads.insert(0, sel.get('start', ''))
-        tails.append(sel.get('end', ''))
         ignoreContent = sel.get('ignoreContent', ignoreContent)
         ignoreStyle = sel.get('ignoreStyle', ignoreStyle)
         leaveText = sel.get('leaveText', leaveText)
@@ -200,15 +195,28 @@ def html2latex(el):
                     if callable(style):
                         style = style(d.name.lower(), d.value, el)
                 if style:
-                    heads.append(style[0])
-                    tails.insert(0, style[1])
+                    if type(style) is tuple:
+                        heads.append(style[0])
+                        tails.insert(0, style[1])
+                    else:
+                        heads.append(style.get('start', ''))
+                        tails.insert(0, style.get('end', ''))
+                        ignoreContent = style.get('ignoreContent', ignoreContent)
+                        ignoreStyle = style.get('ignoreStyle', ignoreStyle)
+                        leaveText = style.get('leaveText', leaveText)
             # print(d.name+': '+d.value)
+    if ignoreStyle:
+        heads.clear()
+        tails.clear()
+    if sel:
+        heads.insert(0, sel.get('start', ''))
+        tails.append(sel.get('end', ''))
 
     result.append(''.join(heads))
 
     if not ignoreContent:
         if el.text:
-            text = inside_characters(el.text, leaveText, ignoreContent)
+            text = inside_characters(el, el.text, leaveText, ignoreContent)
             r = config.replacements_head.get(el, None)
             if r:
                 text = re.sub(r[0], r[1], text)
@@ -216,7 +224,7 @@ def html2latex(el):
         for child in el:
             result.append(html2latex(child))
             if child.tail:
-                text = characters(child.tail)
+                text = characters(child, child.tail)
                 r = config.replacements_tail.get(el, None)
                 if r:
                     text = re.sub(r[0], r[1], text)

@@ -14,6 +14,4 @@ Usage
 * To convert several HTML files at once, just add more `--input` and `--output` arguments:
 `./example.py --style stylesheet.css --input document.html --output document.tex --input other.xhtml --output other.tex`
 
-Configuration
--------------
 Make a copy of `example.py` and modify it.

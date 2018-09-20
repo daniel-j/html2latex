@@ -1,10 +1,15 @@
-
-# Configure html2latex
+#!/usr/bin/env python3
 
 import re
+from html2latex import Html2Latex
+
+# this example is for made with the novel class in mind.
 
 replacements_head = {}
 replacements_tail = {}
+
+# Available options: hyperref, footnotes or None
+hyperlinks = None
 
 
 def s(start='', end='', ignoreStyle=False, ignoreContent=False):
@@ -56,9 +61,6 @@ def handle_paragraph(selector, el):
     return s('\n\n')
 
 
-# Available options: hyperref, footnotes or None
-hyperlinks = None
-
 selectors = {
     # defaults
     'html': s('\\thispagestyle{empty}\n{\n', '\n}\n'),
@@ -67,14 +69,14 @@ selectors = {
     'blockquote': s('\n\\begin{quotation}', '\n\\end{quotation}'),
     'ol': s('\n\\begin{enumerate}', '\n\\end{enumerate}'),
     'ul': s('\n\\begin{itemize}', '\n\\end{itemize}'),
-    'li': s('\n\t\item '),
+    'li': s('\n\t\\item '),
     'i': s('\\textit{', '}', ignoreStyle=True),
     'b, strong': s('\\textbf{', '}', ignoreStyle=True),
     'em': s('\\emph{', '}', ignoreStyle=True),
     'u': s('\\underline{', '}', ignoreStyle=True),
     'sub': s('\\textsubscript{', '}'),
     'sup': s('\\textsuperscript{', '}'),
-    'br': s('\\\\\n'),
+    'br': s('~\\\\\n'),
     'hr': s('\n\n\\line(1,0){300}\n', ignoreStyle=True),
     'a': handle_anchor,
 
@@ -82,14 +84,14 @@ selectors = {
     'p': handle_paragraph,
     '.chapter-name': s('\n\\noindent\\hfil\\charscale[2,0,-0.1\\nbs]{', '}\\hfil\\newline\n\\vspace*{2\\nbs}\n\n', ignoreStyle=True),
     '.chapter-number': s('\\vspace*{3\\nbs}\n\\noindent\\hfil\\charscale[1.0,0,-0.1\\nbs]{\\textsc{\\addfontfeature{Ligatures=NoCommon,LetterSpace=15}{\\strreplace{', '}{ }{}}}}\\hfil\\newline\n\\vspace*{0.0\\nbs}\n', ignoreStyle=True),
-    'p.break': s('\n\n\scenepause', ignoreStyle=True, ignoreContent=True),
+    'p.break': s('\n\n\\scenepause', ignoreStyle=True, ignoreContent=True),
     '.center': s('\n\n{\\csname @flushglue\\endcsname=0pt plus .25\\textwidth\n\\noindent\\centering{}', '\\par\n}', ignoreStyle=True)
 }
 
 characters = {
     u'\u00A0': '~',  # &nbsp;
     u'\u2009': '\\,',  # &thinsp;
-    u'\u2003': '\hspace*{1em}', # &emsp;
+    u'\u2003': '\\hspace*{1em}',  # &emsp;
     '[': '{[}',
     ']': '{]}'
 }
@@ -130,7 +132,7 @@ styles = {
     'margin': {
         '0 2em': ('\n\n\\begin{adjustwidth}{2em}{2em}\n', '\n\\end{adjustwidth}\n\n'),
         '0 1em 0 2em': ('\n\n\\begin{adjustwidth}{2em}{1em}\n', '\n\\end{adjustwidth}\n\n'),
-        '0 1em': ('\n\n\\begin{adjustwidth}{2em}{2em}\n', '\n\end{adjustwidth}\n\n')
+        '0 1em': ('\n\n\\begin{adjustwidth}{2em}{2em}\n', '\n\\end{adjustwidth}\n\n')
     },
     'margin-top': {
         '1em': ('\n\n\\vspace{\\baselineskip}\n\\noindent\n', '')
@@ -142,3 +144,11 @@ styles = {
         'none': s(ignoreContent=True, ignoreStyle=True)
     }
 }
+
+html2latex = Html2Latex(
+    selectors=selectors,
+    characters=characters,
+    styles=styles,
+    replacements_head=replacements_head,
+    replacements_tail=replacements_tail
+).parse_args().run()

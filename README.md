@@ -3,7 +3,11 @@ html2latex
 
 Dependencies
 ------------
-Install on Arch Linux: `# pacman -S python3 python-lxml python-cssutils python-cssselect`
+Arch Linux: `# pacman -S python3 python-lxml python-cssutils python-cssselect`
+
+Ubuntu: ``# apt install python3-lxml python3-cssutils python3-cssselect`
+
+Pip: `pip3 install lxml cssutils cssselect`
 
 Usage
 -----

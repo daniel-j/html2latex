@@ -3,7 +3,7 @@
 import re
 from html2latex import Html2Latex
 
-# this example is for made with the novel class in mind.
+# this example is made with the novel class in mind.
 
 replacements_head = {}
 replacements_tail = {}

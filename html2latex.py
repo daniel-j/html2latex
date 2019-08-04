@@ -8,6 +8,10 @@ from lxml.cssselect import CSSSelector, ExpressionError
 import cssutils
 import re
 import argparse
+import os.path
+
+import logging
+cssutils.log.setLevel(logging.CRITICAL)
 
 
 class Html2Latex(object):
@@ -161,11 +165,12 @@ class Html2Latex(object):
 
         externalStyle = []
         if self.cssFiles:
-            print('Parsing stylesheets...')
+            # print('Parsing stylesheets...')
             for f in self.cssFiles:
                 with open(f, 'r') as stylefile:
                     externalStyle.append(stylefile.read())
         externalStyle = '\n'.join(externalStyle)
+
         styleparser = cssutils.CSSParser(validate=False, parseComments=False)
 
         htmlParser = lxml.html.HTMLParser(encoding='utf-8', remove_comments=True)
@@ -177,7 +182,7 @@ class Html2Latex(object):
             documentStyle = ''
             if not self.disable_style_tags:
                 documentStyle = '\n'.join([style.text for style in root.getchildren()[0].findall('style')])
-            stylesheet = styleparser.parseString(externalStyle + documentStyle)
+            stylesheet = styleparser.parseString(externalStyle + documentStyle, href="file://"+os.path.abspath(inputFile))
             cascading_style = get_view(root, stylesheet, style_callback=styleattribute)
             selectors = get_selectors(root, self.selectors)
             out = self.element2latex(root, cascading_style, selectors)
